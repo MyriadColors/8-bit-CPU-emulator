@@ -1,11 +1,17 @@
-from utils import *	
-
+from ..core.registers import ByteRegister, NibbleRegister, InstructionRegister, ProgramCounter
+from ..core.memory import RAM
+from ..core.flags import FlagZero, FlagCarry
+from ..core.alu import ALU
+from ..core.clock import Clock, RingCounter
+from ..utils.conversions import binary_to_decimal, hex_to_binary
+from ..utils.preprocessor import preprocess_file
+from .instructions import op_code_mnemo, convert_mnemo_op_code
 
 class CPU:
 
     # Initialize the components of the CPU
-    def __init__(self):
-        self.clock=Clock(self)
+    def __init__(self, translate_output=False, log_file_path=None):
+        self.clock=Clock(self, log_file_path=log_file_path)
         self.ringCounter=RingCounter(6)
         self.programCounter=ProgramCounter()
         self.memoryAddressRegister=NibbleRegister()
@@ -16,6 +22,7 @@ class CPU:
         self.alu=ALU(self.aRegister,self.bRegister)
         self.flagZero=FlagZero(self.aRegister)	
         self.flagCarry=FlagCarry(self.alu)
+        self.translate_output = translate_output
 
 
     # Functions: the core of the CPU
@@ -51,7 +58,12 @@ class CPU:
 
     def a_to_terminal(self):
         # Print the state of the register A
-        print(f'OUTPUT: {self.aRegister}')
+        if self.translate_output:
+            binary_value = self.aRegister.read()
+            decimal_value = binary_to_decimal(binary_value)
+            print(f'OUTPUT: {decimal_value}')
+        else:
+            print(f'OUTPUT: {self.aRegister}')
 
     def ir_to_mar(self):
         # Copy the content of the Instruction Register into the MAR
@@ -144,47 +156,45 @@ class CPU:
     # Function to load the ram from a .txt ASSEMBLY script
     def load(self, file_path):
 
-        # Open the file in reading
-        with open(file_path, "r") as file:
-            # Read each line
-            for line_number, line in enumerate(file):
-                # Delete blanks
-                line = line.strip()
-
-                if line[0].isalpha():
-                    # Split the line into instruction and hexadecimal number
-                    parts = line.split()
+        # Preprocess the file (strip comments, remove empty lines)
+        preprocessed_lines = preprocess_file(file_path)
+        
+        # Process each preprocessed line
+        for line_number, line in enumerate(preprocessed_lines):
+            if line[0].isalpha():
+                # Split the line into instruction and hexadecimal number
+                parts = line.split()
+                
+                if len(parts) == 1:
+                    # Convert instruction to op code
+                    op_code = self.convert_mnemo_op_code(line)
+                    combined_data = op_code + "0000"
                     
-                    if len(parts) == 1:
-                        # Convert instruction to op code
-                        op_code = self.convert_mnemo_op_code(line)
-                        combined_data = op_code + "0000"
-                        
-                    
-                    if len(parts) == 2:
-                        instruction = parts[0]
-                        hex_number = parts[1]
-                        # Convert instruction to op code
-                        op_code = self.convert_mnemo_op_code(instruction)
-                        if hex_number == "0x0":
-                            binary_number = "0000"
-                        else:
-                            # Extract the hexadecimal number from the target line
-                            binary_number = hex_to_binary(hex_number, 4)
-                        # Combine op code and binary number
-                        combined_data = op_code + binary_number
-                        
-                    
-                elif not line[0].isalpha():
-                    # Split the line into instruction and hexadecimal number
-                    if line == "0x0" or line == "0x00":
-                            combined_data = "00000000"
+                
+                if len(parts) == 2:
+                    instruction = parts[0]
+                    hex_number = parts[1]
+                    # Convert instruction to op code
+                    op_code = self.convert_mnemo_op_code(instruction)
+                    if hex_number == "0x0":
+                        binary_number = "0000"
                     else:
-                        combined_data = hex_to_binary(line, 8)
+                        # Extract the hexadecimal number from the target line
+                        binary_number = hex_to_binary(hex_number, 4)
+                    # Combine op code and binary number
+                    combined_data = op_code + binary_number
+                    
+                
+            elif not line[0].isalpha():
+                # Split the line into instruction and hexadecimal number
+                if line == "0x0" or line == "0x00":
+                        combined_data = "00000000"
                 else:
-                    continue
-                # Append combined data to RAM using line number as address
-                self.ram.write(combined_data, line_number)
+                    combined_data = hex_to_binary(line, 8)
+            else:
+                continue
+            # Append combined data to RAM using line number as address
+            self.ram.write(combined_data, line_number)
 
 
     # Function to make both the clock and the ringcounter click

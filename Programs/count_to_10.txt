@@ -1,0 +1,15 @@
+LDI 0x0      ; Load immediate value 0 into A register
+OUT          ; Output the current counter value (0)
+STA 0x1      ; Store counter value in memory address 0x1
+LDI 0x1      ; Load immediate value 1 (increment value)
+STA 0x2      ; Store increment value in memory address 0x2
+LDI 0xA      ; Load immediate value 10 (target value)
+STA 0x3      ; Store target value in memory address 0x3
+LDA 0x1      ; Load current counter from memory address 0x1
+ADD 0x2      ; Add increment (1) to counter
+OUT          ; Output the updated counter value
+STA 0x1      ; Store updated counter back to memory
+SUB 0x3      ; Subtract target value (10) to check if we've reached it
+JZ 0xE       ; If zero flag is set (counter == 10), jump to HLT instruction
+JMP 0x7      ; Otherwise, jump back to continue counting
+HLT          ; Halt execution when target is reached
