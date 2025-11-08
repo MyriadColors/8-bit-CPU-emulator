@@ -5,13 +5,14 @@ from ..core.alu import ALU
 from ..core.clock import Clock, RingCounter
 from ..utils.conversions import binary_to_decimal, hex_to_binary
 from ..utils.preprocessor import preprocess_file
-from .instructions import op_code_mnemo, convert_mnemo_op_code
 
 class CPU:
 
     # Initialize the components of the CPU
     def __init__(self, translate_output=False, log_file_path=None):
-        self.clock=Clock(self, log_file_path=log_file_path)
+        # Handle None log_file_path by using default
+        actual_log_path = log_file_path if log_file_path is not None else "log.txt"
+        self.clock=Clock(self, log_file_path=actual_log_path)
         self.ringCounter=RingCounter(6)
         self.programCounter=ProgramCounter()
         self.memoryAddressRegister=NibbleRegister()
@@ -20,10 +21,10 @@ class CPU:
         self.bRegister=ByteRegister()
         self.instructionRegister=InstructionRegister()
         self.alu=ALU(self.aRegister,self.bRegister)
-        self.flagZero=FlagZero(self.aRegister)	
+        self.flagZero=FlagZero(self.aRegister)
         self.flagCarry=FlagCarry(self.alu)
         self.translate_output = translate_output
-
+        self.previous_ram_str = ""  # Initialize previous_ram_str to avoid unbound variable
 
     # Functions: the core of the CPU
     def bus(self, reg1, reg2):
@@ -161,6 +162,8 @@ class CPU:
         
         # Process each preprocessed line
         for line_number, line in enumerate(preprocessed_lines):
+            combined_data = None  # Initialize to ensure it's always defined
+            
             if line[0].isalpha():
                 # Split the line into instruction and hexadecimal number
                 parts = line.split()
@@ -169,9 +172,7 @@ class CPU:
                     # Convert instruction to op code
                     op_code = self.convert_mnemo_op_code(line)
                     combined_data = op_code + "0000"
-                    
-                
-                if len(parts) == 2:
+                elif len(parts) == 2:
                     instruction = parts[0]
                     hex_number = parts[1]
                     # Convert instruction to op code
@@ -183,19 +184,18 @@ class CPU:
                         binary_number = hex_to_binary(hex_number, 4)
                     # Combine op code and binary number
                     combined_data = op_code + binary_number
-                    
-                
             elif not line[0].isalpha():
                 # Split the line into instruction and hexadecimal number
                 if line == "0x0" or line == "0x00":
-                        combined_data = "00000000"
+                    combined_data = "00000000"
                 else:
                     combined_data = hex_to_binary(line, 8)
-            else:
-                continue
-            # Append combined data to RAM using line number as address
-            self.ram.write(combined_data, line_number)
-
+            # else: continue (line is empty or invalid, skip it)
+            
+            # Only write to RAM if combined_data was successfully created
+            if combined_data is not None:
+                # Append combined data to RAM using line number as address
+                self.ram.write(combined_data, line_number)
 
     # Function to make both the clock and the ringcounter click
     def advance_clock(self, how_much=1):
@@ -242,29 +242,26 @@ class CPU:
                 if self.clock.state > threshold:
                     self.clock.on = False
                     break
-
-    # Define the printable state of the CPU
-    def __str__(self):
-        if self.clock.state == 0:
+# Define the printable state of the CPU
+def __str__(self):
+    if self.clock.state == 0:
+        snapshot = f"Clock: {self.clock.__str__()}\nRing Counter: {self.ringCounter.__str__()}\nProgram Counter: {self.programCounter.__str__()}\n" \
+                f"Memory Address Register: {self.memoryAddressRegister.__str__()}\nA Register: {self.aRegister.__str__()}\n" \
+                f"B Register: {self.bRegister.__str__()}\nInstruction Register: {self.instructionRegister.__str__()}\n" \
+                f"Flag Z: {self.flagZero.__str__()}\nFlag C: {self.flagCarry.__str__()}\nRAM:\n{self.ram.__str__()}\n"
+        self.previous_ram_str = self.ram.__str__()
+    
+    else:
+        snapshot = f"Clock: {self.clock.__str__()}\nRing Counter: {self.ringCounter.__str__()}\nProgram Counter: {self.programCounter.__str__()}\n" \
+                f"Memory Address Register: {self.memoryAddressRegister.__str__()}\nA Register: {self.aRegister.__str__()}\n" \
+                f"B Register: {self.bRegister.__str__()}\nInstruction Register: {self.instructionRegister.__str__()}\n" \
+                f"Flag Z: {self.flagZero.__str__()}\nFlag C: {self.flagCarry.__str__()}\n"
+        if self.previous_ram_str != self.ram.__str__():
+            self.previous_ram_str = self.ram.__str__()
             snapshot = f"Clock: {self.clock.__str__()}\nRing Counter: {self.ringCounter.__str__()}\nProgram Counter: {self.programCounter.__str__()}\n" \
-                    f"Memory Address Register: {self.memoryAddressRegister.__str__()}\nA Register: {self.aRegister.__str__()}\n" \
-                    f"B Register: {self.bRegister.__str__()}\nInstruction Register: {self.instructionRegister.__str__()}\n" \
-                    f"Flag Z: {self.flagZero.__str__()}\nFlag C: {self.flagCarry.__str__()}\nRAM:\n{self.ram.__str__()}\n"
-            global previous_ram_str
-            previous_ram_str=self.ram.__str__()
+                f"Memory Address Register: {self.memoryAddressRegister.__str__()}\nA Register: {self.aRegister.__str__()}\n" \
+                f"B Register: {self.bRegister.__str__()}\nInstruction Register: {self.instructionRegister.__str__()}\n" \
+                f"Flag Z: {self.flagZero.__str__()}\nFlag C: {self.flagCarry.__str__()}\nRAM:\n{self.ram.__str__()}\n"
         
-        else:
-            snapshot = f"Clock: {self.clock.__str__()}\nRing Counter: {self.ringCounter.__str__()}\nProgram Counter: {self.programCounter.__str__()}\n" \
-                    f"Memory Address Register: {self.memoryAddressRegister.__str__()}\nA Register: {self.aRegister.__str__()}\n" \
-                    f"B Register: {self.bRegister.__str__()}\nInstruction Register: {self.instructionRegister.__str__()}\n" \
-                    f"Flag Z: {self.flagZero.__str__()}\nFlag C: {self.flagCarry.__str__()}\n"
-            if previous_ram_str!= self.ram.__str__():
-                previous_ram_str=self.ram.__str__()
-                snapshot = f"Clock: {self.clock.__str__()}\nRing Counter: {self.ringCounter.__str__()}\nProgram Counter: {self.programCounter.__str__()}\n" \
-                    f"Memory Address Register: {self.memoryAddressRegister.__str__()}\nA Register: {self.aRegister.__str__()}\n" \
-                    f"B Register: {self.bRegister.__str__()}\nInstruction Register: {self.instructionRegister.__str__()}\n" \
-                    f"Flag Z: {self.flagZero.__str__()}\nFlag C: {self.flagCarry.__str__()}\nRAM:\n{self.ram.__str__()}\n"
-            
-        return snapshot
-
+    return snapshot
 		
