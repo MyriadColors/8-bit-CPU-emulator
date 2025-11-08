@@ -1,6 +1,6 @@
 # Clock and log file
 class Clock:
-    def __init__(self, cpu, log_file_path="log.txt"):
+    def __init__(self, cpu, log_file_path=None):
         self.state = 0
         self.on = True
         self.log_file_path = log_file_path

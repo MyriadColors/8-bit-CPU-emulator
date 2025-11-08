@@ -1,3 +1,4 @@
+from typing import Optional
 from ..core.registers import ByteRegister, NibbleRegister, InstructionRegister, ProgramCounter
 from ..core.memory import RAM
 from ..core.flags import FlagZero, FlagCarry
@@ -9,10 +10,8 @@ from ..utils.preprocessor import preprocess_file
 class CPU:
 
     # Initialize the components of the CPU
-    def __init__(self, translate_output=False, log_file_path=None):
-        # Handle None log_file_path by using default
-        actual_log_path = log_file_path if log_file_path is not None else "log.txt"
-        self.clock=Clock(self, log_file_path=actual_log_path)
+    def __init__(self, translate_output=False, log_file_path: Optional[str] = None):
+        self.clock=Clock(self, log_file_path=log_file_path)
         self.ringCounter=RingCounter(6)
         self.programCounter=ProgramCounter()
         self.memoryAddressRegister=NibbleRegister()
@@ -242,26 +241,26 @@ class CPU:
                 if self.clock.state > threshold:
                     self.clock.on = False
                     break
-# Define the printable state of the CPU
-def __str__(self):
-    if self.clock.state == 0:
-        snapshot = f"Clock: {self.clock.__str__()}\nRing Counter: {self.ringCounter.__str__()}\nProgram Counter: {self.programCounter.__str__()}\n" \
-                f"Memory Address Register: {self.memoryAddressRegister.__str__()}\nA Register: {self.aRegister.__str__()}\n" \
-                f"B Register: {self.bRegister.__str__()}\nInstruction Register: {self.instructionRegister.__str__()}\n" \
-                f"Flag Z: {self.flagZero.__str__()}\nFlag C: {self.flagCarry.__str__()}\nRAM:\n{self.ram.__str__()}\n"
-        self.previous_ram_str = self.ram.__str__()
-    
-    else:
-        snapshot = f"Clock: {self.clock.__str__()}\nRing Counter: {self.ringCounter.__str__()}\nProgram Counter: {self.programCounter.__str__()}\n" \
-                f"Memory Address Register: {self.memoryAddressRegister.__str__()}\nA Register: {self.aRegister.__str__()}\n" \
-                f"B Register: {self.bRegister.__str__()}\nInstruction Register: {self.instructionRegister.__str__()}\n" \
-                f"Flag Z: {self.flagZero.__str__()}\nFlag C: {self.flagCarry.__str__()}\n"
-        if self.previous_ram_str != self.ram.__str__():
-            self.previous_ram_str = self.ram.__str__()
+    # Define the printable state of the CPU
+    def __str__(self):
+        if self.clock.state == 0:
             snapshot = f"Clock: {self.clock.__str__()}\nRing Counter: {self.ringCounter.__str__()}\nProgram Counter: {self.programCounter.__str__()}\n" \
-                f"Memory Address Register: {self.memoryAddressRegister.__str__()}\nA Register: {self.aRegister.__str__()}\n" \
-                f"B Register: {self.bRegister.__str__()}\nInstruction Register: {self.instructionRegister.__str__()}\n" \
-                f"Flag Z: {self.flagZero.__str__()}\nFlag C: {self.flagCarry.__str__()}\nRAM:\n{self.ram.__str__()}\n"
+                    f"Memory Address Register: {self.memoryAddressRegister.__str__()}\nA Register: {self.aRegister.__str__()}\n" \
+                    f"B Register: {self.bRegister.__str__()}\nInstruction Register: {self.instructionRegister.__str__()}\n" \
+                    f"Flag Z: {self.flagZero.__str__()}\nFlag C: {self.flagCarry.__str__()}\nRAM:\n{self.ram.__str__()}\n"
+            self.previous_ram_str = self.ram.__str__()
         
-    return snapshot
+        else:
+            snapshot = f"Clock: {self.clock.__str__()}\nRing Counter: {self.ringCounter.__str__()}\nProgram Counter: {self.programCounter.__str__()}\n" \
+                    f"Memory Address Register: {self.memoryAddressRegister.__str__()}\nA Register: {self.aRegister.__str__()}\n" \
+                    f"B Register: {self.bRegister.__str__()}\nInstruction Register: {self.instructionRegister.__str__()}\n" \
+                    f"Flag Z: {self.flagZero.__str__()}\nFlag C: {self.flagCarry.__str__()}\n"
+            if self.previous_ram_str != self.ram.__str__():
+                self.previous_ram_str = self.ram.__str__()
+                snapshot = f"Clock: {self.clock.__str__()}\nRing Counter: {self.ringCounter.__str__()}\nProgram Counter: {self.programCounter.__str__()}\n" \
+                    f"Memory Address Register: {self.memoryAddressRegister.__str__()}\nA Register: {self.aRegister.__str__()}\n" \
+                    f"B Register: {self.bRegister.__str__()}\nInstruction Register: {self.instructionRegister.__str__()}\n" \
+                    f"Flag Z: {self.flagZero.__str__()}\nFlag C: {self.flagCarry.__str__()}\nRAM:\n{self.ram.__str__()}\n"
+            
+        return snapshot
 		
