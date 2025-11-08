@@ -4,3 +4,5 @@ cpu_emulator/__pycache__/
 cpu_emulator/core/__pycache__/
 cpu_emulator/cpu/__pycache__/
 cpu_emulator/utils/__pycache__/
+merger.py
+.vscode
