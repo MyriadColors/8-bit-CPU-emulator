@@ -50,6 +50,12 @@ File Format:
         action='store_true',
         help='Enable verbose logging: generate log file in logs/ folder with CPU state after each micro-instruction'
     )
+    parser.add_argument(
+        '--threshold',
+        type=int,
+        default=1000,
+        help='Maximum number of clock cycles to execute before aborting (default: 1000)'
+    )
     
     args = parser.parse_args()
     
@@ -88,7 +94,7 @@ File Format:
     try:
         cpu = CPU(translate_output=args.translate, log_file_path=str(log_file_path) if log_file_path else None)
         cpu.load(str(file_path))
-        cpu.run()
+        cpu.run(threshold=args.threshold)
     except Exception as e:
         print(f"Error running program: {e}", file=sys.stderr)
         sys.exit(1)
