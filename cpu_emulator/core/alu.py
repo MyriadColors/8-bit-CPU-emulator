@@ -35,12 +35,10 @@ class ALU(ByteRegister):
         self.state = decimal_to_binary(result, 8)
         self.last_mode = mode
 
-    def read(self, mode='add'):
-        # Update the state before the reading operation
-        self.update(mode)
+    def read(self):
+        # Return the current state without re-updating
         return self.state
         
     def __str__(self):
-        self.read(self.last_mode)  # Use last operation mode for consistency
         return self.state
 

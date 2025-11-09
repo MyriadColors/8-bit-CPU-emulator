@@ -1,8 +1,13 @@
-LDI 0x5
-OUT
-SUB 0x7
-JZ 0x5
-JMP 0x1
-STA 0x1
-HLT
-0x01
+LDI 0x5     ; Address 0x00: A = 5 (initial counter value)
+STA 0x0F    ; Address 0x01: Store A (5) into memory[0xF] (our counter)
+; Loop starts here
+LDA 0x0F    ; Address 0x02: Load counter from memory[0xF] into A
+OUT         ; Address 0x03: Output A
+CMP 0x0A    ; Address 0x04: Compare A with memory[0x0A] (value 1)
+JZ 0x09     ; Address 0x05: If A == 1, jump to HLT (address 0x09)
+SUB 0x0A    ; Address 0x06: Subtract memory[0x0A] (value 1) from A
+STA 0x0F    ; Address 0x07: Store new A back to memory[0xF]
+JMP 0x02    ; Address 0x08: Jump back to LDA 0x0F (address 0x02)
+HLT         ; Address 0x09: Halt
+; Data
+0x01        ; Address 0x0A: Value 1

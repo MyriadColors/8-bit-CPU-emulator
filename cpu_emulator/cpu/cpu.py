@@ -20,7 +20,7 @@ class CPU:
         self.bRegister=ByteRegister()
         self.instructionRegister=InstructionRegister()
         self.alu=ALU(self.aRegister,self.bRegister)
-        self.flagZero=FlagZero(self.aRegister)
+        self.flagZero=FlagZero(self.alu) # Initialize with ALU for CMP
         self.flagCarry=FlagCarry(self.alu)
         self.translate_output = translate_output
         self.previous_ram_str = ""  # Initialize previous_ram_str to avoid unbound variable
@@ -89,24 +89,30 @@ class CPU:
 
     def alu_to_a_add(self):
         # Copy the content of the ALU into A, in case of a sum
-        self.flagCarry.update()
-        self.aRegister.write(self.alu.read('add'))
+        self.flagCarry.update(mode='add') # Pass mode for carry flag calculation
+        self.aRegister.write(self.alu.read())
 
     def alu_to_a_sub(self):
         # Copy the content of the ALU into A, in case of a difference
-        self.aRegister.write(self.alu.read('sub'))
+        self.aRegister.write(self.alu.read())
 
+    def cmp_to_flags(self):
+        # Compare A and B, and update flags
+        self.alu.update('sub') # Perform subtraction to set internal ALU state
+        self.flagZero.update() # Update Zero flag based on ALU result
+        self.flagCarry.update(mode='sub') # Update Carry flag based on ALU result
+ 
     def no_op(self):
         # No operation
         pass
-
+ 
     def clock_off(self):
         # Turn off the clock, abort the run
         self.clock.on = False
 
 
     # Define the microinstructions set of every instruction
-    macro_instructions={ 
+    macro_instructions={
         'LDA':[ir_to_mar, ram_to_a, no_op],
         'ADD':[ir_to_mar, ram_to_b, alu_to_a_add],
         'SUB':[ir_to_mar, ram_to_b, alu_to_a_sub],
@@ -116,7 +122,8 @@ class CPU:
         'JC':[ir_to_pc_c, no_op, no_op],
         'JZ':[ir_to_pc_z, no_op, no_op],
         'OUT':[a_to_terminal, no_op, no_op],
-        'HLT':[clock_off, no_op, no_op]
+        'HLT':[clock_off, no_op, no_op],
+        'CMP':[ir_to_mar, ram_to_b, cmp_to_flags]
     }
 
 
@@ -125,6 +132,7 @@ class CPU:
         "LDA": "0000",
         "ADD": "0001",
         "SUB": "0010",
+        "CMP": "0100",
         "OUT": "1110",
         "HLT": "1111",
         "STA": "1010",
@@ -133,11 +141,12 @@ class CPU:
         "JC" : "0111",
         "JZ" : "1001"
     }
-
+ 
     op_code_mnemo = {
-        '0000' : 'LDA', 
+        '0000' : 'LDA',
         '0001' : 'ADD',
         '0010' : 'SUB',
+        '0100' : 'CMP',
         '1110' : 'OUT',
         '1111' : 'HLT',
         "1010" : "STA",
